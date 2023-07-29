@@ -16,7 +16,7 @@ add_arg('pretrained_model', str,    None,                       '预训练模型
 args = parser.parse_args()
 print_arguments(args=args)
 
-# 获取训练器
+# 获取训练器 test
 trainer = MAClsTrainer(configs=args.configs, use_gpu=args.use_gpu)
 
 trainer.train(save_model_path=args.save_model_path,
