@@ -34,6 +34,7 @@ def print_arguments(args=None, configs=None):
 
 def add_arguments(argname, type, default, help, argparser, **kwargs):
     type = distutils.util.strtobool if type == bool else type
+    
     argparser.add_argument("--" + argname,
                            default=default,
                            type=type,

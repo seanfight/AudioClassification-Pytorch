@@ -1,5 +1,4 @@
 import os
-
 import librosa
 
 
@@ -28,7 +27,7 @@ def get_data_list(audio_path, list_path):
     f_train.close()
 
 
-def create_UrbanSound8K_list(audio_path, metadata_path, list_path):
+def create_UrbanSound8K_list(audio_path, me tadata_path, list_path):
     sound_sum = 0
 
     f_train = open(os.path.join(list_path, 'train_list.txt'), 'w', encoding='utf-8')
