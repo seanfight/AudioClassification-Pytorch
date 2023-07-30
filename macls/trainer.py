@@ -8,12 +8,27 @@ from datetime import timedelta
 
 import numpy as np
 import torch
+# 分布式通信包 - torch.distributed
+
+# Distributed communication package - torch.distributed — PyTorch 1.12 documentation
+
+# torch.distributed提供了一种类似MPI的接口，用于跨多机器网络交换张量数据。它支持几种不同的后端和初始化方法。
+
+# Pytorch中通过 torch.distributed 包提供分布式支持，包括 GPU 和 CPU 的分布式训练支持。
+
+# Pytorch 分布式目前只支持 Linux。
+
 import torch.distributed as dist
+# YAML是专门用来写配置文件的语言，非常简洁和强大，远比JSON格式方便
 import yaml
+# python计算混淆矩阵
 from sklearn.metrics import confusion_matrix
+# 单机多卡分布式训练
 from torch.utils.data.distributed import DistributedSampler
+
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
+# 打印信息
 from torchinfo import summary
 from tqdm import tqdm
 from visualdl import LogWriter
@@ -41,17 +56,19 @@ class MAClsTrainer(object):
         :param use_gpu: 是否使用GPU训练模型
         """
         if use_gpu:
+            # 使用assert断言，如果true继续运行，如果错误，报错gpu
             assert (torch.cuda.is_available()), 'GPU不可用'
             self.device = torch.device("cuda")
         else:
             os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
             self.device = torch.device("cpu")
         self.use_gpu = use_gpu
-        # 读取配置文件
+        # 读取配置文件，判断condigs是否为str类型
         if isinstance(configs, str):
             with open(configs, 'r', encoding='utf-8') as f:
                 configs = yaml.load(f.read(), Loader=yaml.FullLoader)
             print_arguments(configs=configs)
+            # 加载配置文件
         self.configs = dict_to_object(configs)
         assert self.configs.use_model in SUPPORT_MODEL, f'没有该模型：{self.configs.use_model}'
         self.model = None
@@ -60,10 +77,11 @@ class MAClsTrainer(object):
         with open(self.configs.dataset_conf.label_list_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
         self.class_labels = [l.replace('\n', '') for l in lines]
+
         if platform.system().lower() == 'windows':
             self.configs.dataset_conf.num_workers = 0
             logger.warning('Windows系统不支持多线程读取数据，已自动关闭！')
-        # 获取特征器
+        # 获取特征器，出入字典
         self.audio_featurizer = AudioFeaturizer(feature_conf=self.configs.feature_conf, **self.configs.preprocess_conf)
 
     def __setup_dataloader(self, augment_conf_path=None, is_train=False):
@@ -75,6 +93,7 @@ class MAClsTrainer(object):
                 logger.info('数据增强配置文件{}不存在'.format(augment_conf_path))
             augmentation_config = '{}'
         if is_train:
+        
             self.train_dataset = CustomDataset(data_list_path=self.configs.dataset_conf.train_list,
                                                do_vad=self.configs.dataset_conf.do_vad,
                                                max_duration=self.configs.dataset_conf.max_duration,
@@ -327,7 +346,7 @@ class MAClsTrainer(object):
             writer = LogWriter(logdir='log')
 
         if nranks > 1 and self.use_gpu:
-            # 初始化NCCL环境
+            # 初始化NCCL环境，分布式计算
             dist.init_process_group(backend='nccl')
             local_rank = int(os.environ["LOCAL_RANK"])
 
