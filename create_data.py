@@ -27,21 +27,22 @@ def get_data_list(audio_path, list_path):
     f_train.close()
 
 
-def create_UrbanSound8K_list(audio_path, me tadata_path, list_path):
+def create_UrbanSound8K_list(audio_path, metadata_path, list_path):
     sound_sum = 0
-
     f_train = open(os.path.join(list_path, 'train_list.txt'), 'w', encoding='utf-8')
     f_test = open(os.path.join(list_path, 'test_list.txt'), 'w', encoding='utf-8')
     f_label = open(os.path.join(list_path, 'label_list.txt'), 'w', encoding='utf-8')
 
     with open(metadata_path) as f:
         lines = f.readlines()
-
+        print(lines[1])
+        
     labels = {}
     for i, line in enumerate(lines):
         if i == 0:continue
         data = line.replace('\n', '').split(',')
         class_id = int(data[6])
+        print(data)
         if class_id not in labels.keys():
             labels[class_id] = data[-1]
         sound_path = os.path.join(audio_path, f'fold{data[5]}', data[0]).replace('\\', '/')
@@ -50,6 +51,7 @@ def create_UrbanSound8K_list(audio_path, me tadata_path, list_path):
         else:
             f_train.write(f'{sound_path}\t{data[6]}\n')
         sound_sum += 1
+    print(labels)
     for i in range(len(labels)):
         f_label.write(f'{labels[i]}\n')
     f_label.close()
