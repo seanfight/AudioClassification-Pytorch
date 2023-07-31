@@ -42,7 +42,7 @@ def create_UrbanSound8K_list(audio_path, metadata_path, list_path):
         if i == 0:continue
         data = line.replace('\n', '').split(',')
         class_id = int(data[6])
-        print(data)
+        
         if class_id not in labels.keys():
             labels[class_id] = data[-1]
         sound_path = os.path.join(audio_path, f'fold{data[5]}', data[0]).replace('\\', '/')
@@ -51,7 +51,7 @@ def create_UrbanSound8K_list(audio_path, metadata_path, list_path):
         else:
             f_train.write(f'{sound_path}\t{data[6]}\n')
         sound_sum += 1
-    print(labels)
+    
     for i in range(len(labels)):
         f_label.write(f'{labels[i]}\n')
     f_label.close()
