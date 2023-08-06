@@ -31,7 +31,7 @@ def print_arguments(args=None, configs=None):
                 logger.info("%s: %s" % (arg, value))
         logger.info("------------------------------------------------")
 
-
+# 配置解析数据，通过argparse
 def add_arguments(argname, type, default, help, argparser, **kwargs):
     type = distutils.util.strtobool if type == bool else type
     
