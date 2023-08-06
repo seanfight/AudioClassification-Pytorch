@@ -41,8 +41,6 @@ class AudioFeaturizer(nn.Module):
         :rtype: ndarray
         """
         feature = self.feat_fun(waveforms)
-        print("------------ggggggg数据gggggg---------------")
-        print(feature.shape)
         feature = feature.transpose(2, 1)
         # 归一化
         mean = torch.mean(feature, 1, keepdim=True)

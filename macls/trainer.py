@@ -95,16 +95,18 @@ class MAClsTrainer(object):
         # 获取特征器，出入字典，处理音频数据
         self.audio_featurizer = AudioFeaturizer(feature_conf=self.configs.feature_conf, **self.configs.preprocess_conf)
 
+
     def __setup_dataloader(self, augment_conf_path=None, is_train=False):
-        # 获取训练数据
+        # 获取训练数据，文件存在
         if augment_conf_path is not None and os.path.exists(augment_conf_path) and is_train:
+            # 读取音频配置文件
             augmentation_config = io.open(augment_conf_path, mode='r', encoding='utf8').read()
         else:
             if augment_conf_path is not None and not os.path.exists(augment_conf_path):
                 logger.info('数据增强配置文件{}不存在'.format(augment_conf_path))
             augmentation_config = '{}'
         if is_train:
-        
+            # 读取数据
             self.train_dataset = CustomDataset(data_list_path=self.configs.dataset_conf.train_list,
                                                do_vad=self.configs.dataset_conf.do_vad,
                                                max_duration=self.configs.dataset_conf.max_duration,
@@ -118,6 +120,7 @@ class MAClsTrainer(object):
             if torch.cuda.device_count() > 1:
                 # 设置支持多卡训练
                 train_sampler = DistributedSampler(dataset=self.train_dataset)
+            # 
             self.train_loader = DataLoader(dataset=self.train_dataset,
                                            collate_fn=collate_fn,
                                            shuffle=(train_sampler is None),
@@ -172,6 +175,7 @@ class MAClsTrainer(object):
             raise Exception(f'{self.configs.use_model} 模型不存在！')
         self.model.to(self.device)
         self.audio_featurizer.to(self.device)
+        # 查看模型参数
         summary(self.model, input_size=(1, 98, self.audio_featurizer.feature_dim))
         # print(self.model)
         # 获取损失函数
@@ -295,7 +299,9 @@ class MAClsTrainer(object):
                 audio = audio.to(self.device)
                 input_lens_ratio = input_lens_ratio.to(self.device)
                 label = label.to(self.device).long()
+            # 加载数据
             features, _ = self.audio_featurizer(audio, input_lens_ratio)
+            # 开始训练
             output = self.model(features)
             # 计算损失值
             los = self.loss(output, label)
@@ -341,6 +347,7 @@ class MAClsTrainer(object):
               resume_model=None,
               pretrained_model=None,
               augment_conf_path='configs/augmentation.json'):
+
         """
         训练模型
         :param save_model_path: 模型保存的路径
@@ -348,6 +355,7 @@ class MAClsTrainer(object):
         :param pretrained_model: 预训练模型的路径，当为None则不使用预训练模型
         :param augment_conf_path: 数据增强的配置文件，为json格式
         """
+
         # 获取有多少张显卡训练
         nranks = torch.cuda.device_count()
         local_rank = 0
@@ -361,7 +369,7 @@ class MAClsTrainer(object):
             dist.init_process_group(backend='nccl')
             local_rank = int(os.environ["LOCAL_RANK"])
 
-        # 获取数据
+        # 获取数据，比较重要的函数
         self.__setup_dataloader(augment_conf_path=augment_conf_path, is_train=True)
         # 获取模型
         self.__setup_model(input_size=self.audio_featurizer.feature_dim, is_train=True)
