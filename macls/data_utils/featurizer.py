@@ -37,10 +37,12 @@ class AudioFeaturizer(nn.Module):
         :type waveforms: AudioSegment
         :param input_lens_ratio: input length ratio
         :type input_lens_ratio: tensor
-        :return: Spectrogram audio feature in 2darray.
+        :return: Spectrogram audio feature in 2dar维度参数的顺序是可以交换位置的，即transpose（x，ray.
         :rtype: ndarray
         """
         feature = self.feat_fun(waveforms)
+        print("------------ggggggg数据gggggg---------------")
+        print(feature.shape)
         feature = feature.transpose(2, 1)
         # 归一化
         mean = torch.mean(feature, 1, keepdim=True)
@@ -58,7 +60,7 @@ class AudioFeaturizer(nn.Module):
         # 对特征进行掩码操作
         feature_masked = torch.where(mask, feature, torch.zeros_like(feature))
         return feature_masked, input_lens
-
+    # property修饰的方法可以通过对象直接使用
     @property
     def feature_dim(self):
         """返回特征大小

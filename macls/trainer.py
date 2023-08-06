@@ -62,26 +62,37 @@ class MAClsTrainer(object):
         else:
             os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
             self.device = torch.device("cpu")
+
         self.use_gpu = use_gpu
+
+        # yaml格式配置文件读取
         # 读取配置文件，判断condigs是否为str类型
+        # 判断configs是否为str类型
         if isinstance(configs, str):
             with open(configs, 'r', encoding='utf-8') as f:
                 configs = yaml.load(f.read(), Loader=yaml.FullLoader)
+            # 打印config配置文件
             print_arguments(configs=configs)
-            # 加载配置文件
+            
+        # 把字典转换为字典
         self.configs = dict_to_object(configs)
+
+        # 断言 判断数据
         assert self.configs.use_model in SUPPORT_MODEL, f'没有该模型：{self.configs.use_model}'
         self.model = None
         self.test_loader = None
-        # 获取分类标签
+
+        # 获取分类标签，声音分类
         with open(self.configs.dataset_conf.label_list_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
         self.class_labels = [l.replace('\n', '') for l in lines]
-
+        
+        # 判断系统，如果是windows，无法使用多线程
         if platform.system().lower() == 'windows':
             self.configs.dataset_conf.num_workers = 0
             logger.warning('Windows系统不支持多线程读取数据，已自动关闭！')
-        # 获取特征器，出入字典
+       
+        # 获取特征器，出入字典，处理音频数据
         self.audio_featurizer = AudioFeaturizer(feature_conf=self.configs.feature_conf, **self.configs.preprocess_conf)
 
     def __setup_dataloader(self, augment_conf_path=None, is_train=False):
