@@ -7,7 +7,7 @@ from macls.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
-
+# 重写customdataset类，构建数据集
 class CustomDataset(Dataset):
     def __init__(self,
                  data_list_path,
@@ -40,16 +40,20 @@ class CustomDataset(Dataset):
         self._target_sample_rate = sample_rate
         self._use_dB_normalization = use_dB_normalization
         self._target_dB = target_dB
+        # 用于指定音频增强的配置
         self._augmentation_pipeline = AugmentationPipeline(augmentation_config=augmentation_config)
-        # 获取数据列表
+        # 获取数据列表，训练数据，train_list.text
         with open(data_list_path, 'r', encoding='utf-8') as f:
+            # 读取数据在lines
             self.lines = f.readlines()
-
+        # 返回数据集索引
     def __getitem__(self, idx):
         # 分割音频路径和标签
         audio_path, label = self.lines[idx].replace('\n', '').split('\t')
+        
         # 读取音频
         audio_segment = AudioSegment.from_file(audio_path)
+        
         # 裁剪静音
         if self.do_vad:
             audio_segment.vad()
@@ -70,4 +74,5 @@ class CustomDataset(Dataset):
         return np.array(audio_segment.samples, dtype=np.float32), np.array(int(label), dtype=np.int64)
 
     def __len__(self):
+        # 返回数据集长度
         return len(self.lines)

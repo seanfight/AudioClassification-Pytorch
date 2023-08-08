@@ -13,12 +13,3 @@ mel_specgram = transform(waveform)  # (channel, n_mels, time)
 # print(mel_specgram.transpose(2,1).shape)
 # mean = torch.mean(mel_specgram.transpose(2,1), 1, keepdim=True)
 # print(torch.cuda.device_count())
-class f1():
-    def test(self):
-        self.c  =  20
-    
-    def test2(self):
-        self.test()
-        print(self.c)
-a = f1()
-a.test2()

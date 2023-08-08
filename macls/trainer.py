@@ -106,7 +106,7 @@ class MAClsTrainer(object):
                 logger.info('数据增强配置文件{}不存在'.format(augment_conf_path))
             augmentation_config = '{}'
         if is_train:
-            # 读取数据
+            # 读取数据，自定义数据集类
             self.train_dataset = CustomDataset(data_list_path=self.configs.dataset_conf.train_list,
                                                do_vad=self.configs.dataset_conf.do_vad,
                                                max_duration=self.configs.dataset_conf.max_duration,
@@ -126,7 +126,10 @@ class MAClsTrainer(object):
                                            shuffle=(train_sampler is None),
                                            batch_size=self.configs.dataset_conf.batch_size,
                                            sampler=train_sampler,
-                                           num_workers=self.configs.dataset_conf.num_workers)
+                                           num_workers=self.configs.dataset_conf.num_workers,
+                                           pin_memory = True
+                                           
+                                           )
         # 获取测试数据
         self.test_dataset = CustomDataset(data_list_path=self.configs.dataset_conf.test_list,
                                           do_vad=self.configs.dataset_conf.do_vad,
@@ -244,6 +247,7 @@ class MAClsTrainer(object):
                 self.model.module.load_state_dict(state_dict)
             else:
                 self.model.load_state_dict(state_dict)
+                
             self.optimizer.load_state_dict(torch.load(os.path.join(resume_model, 'optimizer.pt')))
             with open(os.path.join(resume_model, 'model.state'), 'r', encoding='utf-8') as f:
                 json_data = json.load(f)
@@ -382,7 +386,7 @@ class MAClsTrainer(object):
         logger.info('训练数据：{}'.format(len(self.train_dataset)))
 
         self.__load_pretrained(pretrained_model=pretrained_model)
-        # 加载恢复模型
+        # 加载恢复模型,
         last_epoch, best_acc = self.__load_checkpoint(save_model_path=save_model_path, resume_model=resume_model)
 
         test_step, self.train_step = 0, 0
@@ -494,3 +498,5 @@ class MAClsTrainer(object):
         os.makedirs(os.path.dirname(infer_model_path), exist_ok=True)
         torch.jit.save(infer_model, infer_model_path)
         logger.info("预测模型已保存：{}".format(infer_model_path))
+        print("hello")
+        print("预测模型已保存：{}".format(infer_model_path))
