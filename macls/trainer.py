@@ -92,7 +92,7 @@ class MAClsTrainer(object):
             self.configs.dataset_conf.num_workers = 0
             logger.warning('Windows系统不支持多线程读取数据，已自动关闭！')
        
-        # 获取特征器，出入字典，处理音频数据
+        # 获取特征器对象，出入字典，处理音频数据
         self.audio_featurizer = AudioFeaturizer(feature_conf=self.configs.feature_conf, **self.configs.preprocess_conf)
 
 
