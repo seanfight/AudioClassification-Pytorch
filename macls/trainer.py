@@ -97,6 +97,7 @@ class MAClsTrainer(object):
 
 
     def __setup_dataloader(self, augment_conf_path=None, is_train=False):
+
         # 获取训练数据，文件存在
         if augment_conf_path is not None and os.path.exists(augment_conf_path) and is_train:
             # 读取音频配置文件
@@ -107,6 +108,7 @@ class MAClsTrainer(object):
             augmentation_config = '{}'
         if is_train:
             # 读取数据，自定义数据集类
+
             self.train_dataset = CustomDataset(data_list_path=self.configs.dataset_conf.train_list,
                                                do_vad=self.configs.dataset_conf.do_vad,
                                                max_duration=self.configs.dataset_conf.max_duration,
@@ -121,15 +123,18 @@ class MAClsTrainer(object):
                 # 设置支持多卡训练
                 train_sampler = DistributedSampler(dataset=self.train_dataset)
             # 
+
             self.train_loader = DataLoader(dataset=self.train_dataset,
                                            collate_fn=collate_fn,
                                            shuffle=(train_sampler is None),
                                            batch_size=self.configs.dataset_conf.batch_size,
                                            sampler=train_sampler,
                                            num_workers=self.configs.dataset_conf.num_workers,
-                                           pin_memory = True
+                                        #    pin_memory = True
+                                           pin_memory = False
                                            
                                            )
+            
         # 获取测试数据
         self.test_dataset = CustomDataset(data_list_path=self.configs.dataset_conf.test_list,
                                           do_vad=self.configs.dataset_conf.do_vad,
@@ -180,11 +185,11 @@ class MAClsTrainer(object):
         self.audio_featurizer.to(self.device)
         # 查看模型参数
         summary(self.model, input_size=(1, 98, self.audio_featurizer.feature_dim))
-        # print(self.model)
         # 获取损失函数
         self.loss = torch.nn.CrossEntropyLoss()
+
         if is_train:
-            # 获取优化方法
+            # 获取参数优化方法
             optimizer = self.configs.optimizer_conf.optimizer
             if optimizer == 'Adam':
                 self.optimizer = torch.optim.Adam(params=self.model.parameters(),
@@ -230,6 +235,7 @@ class MAClsTrainer(object):
                 self.model.load_state_dict(model_state_dict, strict=False)
             logger.info('成功加载预训练模型：{}'.format(pretrained_model))
 
+    # 加载恢复模型
     def __load_checkpoint(self, save_model_path, resume_model):
         last_epoch = -1
         best_acc = 0
@@ -244,11 +250,13 @@ class MAClsTrainer(object):
             assert os.path.exists(os.path.join(resume_model, 'optimizer.pt')), "优化方法参数文件不存在！"
             state_dict = torch.load(os.path.join(resume_model, 'model.pt'))
             if isinstance(self.model, torch.nn.parallel.DistributedDataParallel):
+                # 加载模型和参数
                 self.model.module.load_state_dict(state_dict)
             else:
                 self.model.load_state_dict(state_dict)
-                
+            # 优化方法
             self.optimizer.load_state_dict(torch.load(os.path.join(resume_model, 'optimizer.pt')))
+
             with open(os.path.join(resume_model, 'model.state'), 'r', encoding='utf-8') as f:
                 json_data = json.load(f)
                 last_epoch = json_data['last_epoch'] - 1
@@ -294,7 +302,11 @@ class MAClsTrainer(object):
         train_times, accuracies, loss_sum = [], [], []
         start = time.time()
         sum_batch = len(self.train_loader) * self.configs.train_conf.max_epoch
+        # print("---")
+        # (audio, label, input_lens_ratio) = next(iter(self.train_loader))
+        # print(label)
         for batch_id, (audio, label, input_lens_ratio) in enumerate(self.train_loader):
+
             if nranks > 1:
                 audio = audio.to(local_rank)
                 input_lens_ratio = input_lens_ratio.to(local_rank)
@@ -309,6 +321,7 @@ class MAClsTrainer(object):
             output = self.model(features)
             # 计算损失值
             los = self.loss(output, label)
+            # 
             self.optimizer.zero_grad()
             los.backward()
             self.optimizer.step()
@@ -360,6 +373,7 @@ class MAClsTrainer(object):
         :param augment_conf_path: 数据增强的配置文件，为json格式
         """
 
+
         # 获取有多少张显卡训练
         nranks = torch.cuda.device_count()
         local_rank = 0
@@ -384,9 +398,9 @@ class MAClsTrainer(object):
             self.audio_featurizer.to(local_rank)
             self.model = torch.nn.parallel.DistributedDataParallel(self.model, device_ids=[local_rank])
         logger.info('训练数据：{}'.format(len(self.train_dataset)))
-
+        # 记载预训练模型，此处为none
         self.__load_pretrained(pretrained_model=pretrained_model)
-        # 加载恢复模型,
+        # 加载模型,
         last_epoch, best_acc = self.__load_checkpoint(save_model_path=save_model_path, resume_model=resume_model)
 
         test_step, self.train_step = 0, 0
@@ -394,11 +408,13 @@ class MAClsTrainer(object):
         if local_rank == 0:
             writer.add_scalar('Train/lr', self.scheduler.get_last_lr()[0], last_epoch)
         # 开始训练
+
         for epoch_id in range(last_epoch, self.configs.train_conf.max_epoch):
             epoch_id += 1
             start_epoch = time.time()
             # 训练一个epoch
             self.__train_epoch(epoch_id=epoch_id, local_rank=local_rank, writer=writer, nranks=nranks)
+
             # 多卡训练只使用一个进程执行评估和保存模型
             if local_rank == 0:
                 logger.info('=' * 70)
