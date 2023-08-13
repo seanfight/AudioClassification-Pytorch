@@ -57,3 +57,8 @@ b = torch.rand(5,32,4)
 print(b.expand(-1,-1,2).shape)
 # print(torch.cat([a,b],dim=0).shape)
 # print(torch.cat([a,b],dim=1).shape)
+
+# 常使用的张量结构操作：维度变换（tranpose、view 等）、
+# 合并分割（split、chunk等）、
+# 索引切片（index_select、gather 等）。
+# 常使用的张量数学运算：标量运算、向量运算、矩阵运算。
