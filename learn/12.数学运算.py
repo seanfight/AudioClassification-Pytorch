@@ -34,3 +34,4 @@ print(c.squeeze(1).shape)
 c = torch.arange(0,12,1).view(3,4)
 print(c.max())
 print(c.argmax())
+# 
