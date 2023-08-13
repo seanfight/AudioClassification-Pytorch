@@ -32,6 +32,7 @@ class CustomDataset(Dataset):
             use_dB_normalization: 是否对音频进行音量归一化
             target_dB: 音量归一化的大小
         """
+        # python2写法，python3 super（）.__init__()
         super(CustomDataset, self).__init__()
         self.do_vad = do_vad
         self.max_duration = max_duration
